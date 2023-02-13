@@ -8,6 +8,7 @@ const core = __nccwpck_require__(2186);
 
 async function createChatGPTAPI(apiKey) {
   const { ChatGPTAPI } = __nccwpck_require__(3564);
+  __nccwpck_require__(2340);
   const api = new ChatGPTAPI({ apiKey });
   return api;
 }
@@ -10136,6 +10137,30 @@ function isPlainObject(o) {
 }
 
 exports.isPlainObject = isPlainObject;
+
+
+/***/ }),
+
+/***/ 2340:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+"use strict";
+
+
+var realFetch = __nccwpck_require__(467);
+module.exports = function(url, options) {
+	if (/^\/\//.test(url)) {
+		url = 'https:' + url;
+	}
+	return realFetch.call(this, url, options);
+};
+
+if (!global.fetch) {
+	global.fetch = module.exports;
+	global.Response = realFetch.Response;
+	global.Headers = realFetch.Headers;
+	global.Request = realFetch.Request;
+}
 
 
 /***/ }),
