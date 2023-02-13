@@ -7,8 +7,8 @@ require('./sourcemap-register.js');/******/ (() => { // webpackBootstrap
 const core = __nccwpck_require__(2186);
 
 async function createChatGPTAPI(apiKey) {
-  const { ChatGPTAPI } = __nccwpck_require__(3564);
-  __nccwpck_require__(2340);
+  await __nccwpck_require__(2340);
+  const { ChatGPTAPI } = await __nccwpck_require__(3564);
   const api = new ChatGPTAPI({ apiKey });
   return api;
 }

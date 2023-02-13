@@ -1,8 +1,8 @@
 const core = require("@actions/core");
 
 async function createChatGPTAPI(apiKey) {
-  const { ChatGPTAPI } = require("chatgpt");
-  require('isomorphic-fetch');
+  await require('isomorphic-fetch');
+  const { ChatGPTAPI } = await require("chatgpt");
   const api = new ChatGPTAPI({ apiKey });
   return api;
 }
