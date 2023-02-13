@@ -16,7 +16,7 @@ async function callChatGPT(api, content, retryOn503) {
   while (cnt++ <= retryOn503) {
     try {
       const response = await api.sendMessage(content);
-      return response;
+      return response.text;
     } catch (err) {
       if (!is503or504Error(err)) throw err;
     }
@@ -33,7 +33,7 @@ function startConversation(api, retryOn503) {
       while (cnt++ <= retryOn503) {
         try {
           const response = await conversation.sendMessage(message);
-          return response;
+          return response.text;
         } catch (err) {
           if (!is503or504Error(err)) throw err;
           core.warning(`Got "${err}", sleep for 10s now!`);
