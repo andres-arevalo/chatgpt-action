@@ -27,7 +27,7 @@ async function runPRReview({ api, repo, owner, number, split }) {
     const prompt = genReviewPRPrompt(title, body, diff);
     core.info(`The prompt is: ${prompt}`);
     const response = await callChatGPT(api, prompt, 5);
-    reply = response;
+    reply = response.text;
   } else {
     reply = "";
     const { welcomePrompts, diffPrompts, endPrompt } = genReviewPRSplitedPrompt(
@@ -38,13 +38,15 @@ async function runPRReview({ api, repo, owner, number, split }) {
     );
     const conversation = startConversation(api, 5);
     let cnt = 0;
+    let lastResponse = undefined;
     const prompts = welcomePrompts.concat(diffPrompts);
     prompts.push(endPrompt);
     for (const prompt of prompts) {
       core.info(`Sending ${prompt}`);
-      const response = await conversation.sendMessage(prompt);
-      core.info(`Received ${response}`);
-      reply += `**ChatGPT#${++cnt}**: ${response}\n\n`;
+      const response = await conversation.sendMessage(prompt, lastResponse);
+      lastResponse = response;
+      core.info(`Received ${response.text}`);
+      reply += `**ChatGPT#${++cnt}**: ${response.text}\n\n`;
       // Wait for 10s
       await new Promise((r) => setTimeout(r, 10000));
     }

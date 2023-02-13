@@ -16,7 +16,7 @@ async function callChatGPT(api, content, retryOn503) {
   while (cnt++ <= retryOn503) {
     try {
       const response = await api.sendMessage(content);
-      return response.text;
+      return response;
     } catch (err) {
       if (!is503or504Error(err)) throw err;
     }
@@ -24,16 +24,22 @@ async function callChatGPT(api, content, retryOn503) {
 }
 
 function startConversation(api, retryOn503) {
-  const conversation = api.getConversation();
   return {
-    conversation,
     retryOn503,
-    async sendMessage(message) {
+    async sendMessage(message, lastResponse) {
       let cnt = 0;
       while (cnt++ <= retryOn503) {
         try {
-          const response = await conversation.sendMessage(message);
-          return response.text;
+          if (lastResponse) {
+            const response = await api.sendMessage(message, {
+              conversationId: lastResponse.conversationId,
+              parentMessageId: lastResponse.id
+            });
+            return response;
+          } else {
+            const response = await api.sendMessage(message);
+            return response;
+          }
         } catch (err) {
           if (!is503or504Error(err)) throw err;
           core.warning(`Got "${err}", sleep for 10s now!`);

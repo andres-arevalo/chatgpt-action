@@ -22,7 +22,7 @@ async function callChatGPT(api, content, retryOn503) {
   while (cnt++ <= retryOn503) {
     try {
       const response = await api.sendMessage(content);
-      return response.text;
+      return response;
     } catch (err) {
       if (!is503or504Error(err)) throw err;
     }
@@ -30,16 +30,22 @@ async function callChatGPT(api, content, retryOn503) {
 }
 
 function startConversation(api, retryOn503) {
-  const conversation = api.getConversation();
   return {
-    conversation,
     retryOn503,
-    async sendMessage(message) {
+    async sendMessage(message, lastResponse) {
       let cnt = 0;
       while (cnt++ <= retryOn503) {
         try {
-          const response = await conversation.sendMessage(message);
-          return response.text;
+          if (lastResponse) {
+            const response = await api.sendMessage(message, {
+              conversationId: lastResponse.conversationId,
+              parentMessageId: lastResponse.id
+            });
+            return response;
+          } else {
+            const response = await api.sendMessage(message);
+            return response;
+          }
         } catch (err) {
           if (!is503or504Error(err)) throw err;
           core.warning(`Got "${err}", sleep for 10s now!`);
@@ -15798,7 +15804,7 @@ async function runPRReview({ api, repo, owner, number, split }) {
     const prompt = genReviewPRPrompt(title, body, diff);
     core.info(`The prompt is: ${prompt}`);
     const response = await callChatGPT(api, prompt, 5);
-    reply = response;
+    reply = response.text;
   } else {
     reply = "";
     const { welcomePrompts, diffPrompts, endPrompt } = genReviewPRSplitedPrompt(
@@ -15809,13 +15815,15 @@ async function runPRReview({ api, repo, owner, number, split }) {
     );
     const conversation = startConversation(api, 5);
     let cnt = 0;
+    let lastResponse = undefined;
     const prompts = welcomePrompts.concat(diffPrompts);
     prompts.push(endPrompt);
     for (const prompt of prompts) {
       core.info(`Sending ${prompt}`);
-      const response = await conversation.sendMessage(prompt);
-      core.info(`Received ${response}`);
-      reply += `**ChatGPT#${++cnt}**: ${response}\n\n`;
+      const response = await conversation.sendMessage(prompt, lastResponse);
+      lastResponse = response;
+      core.info(`Received ${response.text}`);
+      reply += `**ChatGPT#${++cnt}**: ${response.text}\n\n`;
       // Wait for 10s
       await new Promise((r) => setTimeout(r, 10000));
     }
