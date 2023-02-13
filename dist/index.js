@@ -15744,26 +15744,39 @@ function genReviewPRSplitedPrompt(title, body, diff, limit) {
     .reduce((prev, cur, i) => {
       if (i % 2 == 1) {
         let dif = prev + cur;
+        const header = diff.split("\n", 1)[0];
         if (dif.length > limit) {
-          const header = diff.split("\n", 1)[0];
-          const info = "This diff is too large so I omitted it for you.";
-          splits.push(`${header}\n${info}`);
-        } else splits.push(dif);
+          splits.push({
+            header: header,
+            prompt: "This diff is too large so I omitted it for you."
+          });
+        } else splits.push({
+          header: header,
+          prompt: dif
+        });
       }
       return cur;
     });
 
   return {
     welcomePrompts: [
-      `Here is a pull request. Please assume you are a reviewer of this PR. First I will tell you the title and body of the PR. Please greet the PR author if you have done reading.
-The title is ${title}
-The remaining part is the body.
-${body}`,
-      `Now I will give you the changes made in this PR one file at a time.
-When a diff is too large, I will omit it and tell you about that.`,
+      {
+        header: "Welcome",
+        prompt: `Here is a pull request. Please assume you are a reviewer of this PR. First I will tell you the title and body of the PR. Please greet the PR author if you have done reading.
+        The title is ${title}
+        The remaining part is the body.
+        ${body}`
+      },
+      {
+        header: "Welcome2",
+        prompt: `Now I will give you the changes made in this PR one file at a time. When a diff is too large, I will omit it and tell you about that.`
+      }
     ],
     diffPrompts: splits,
-    endPrompt: `Based on your existing knowledge, can you tell me the problems with the above pull request and your suggestions for this PR?`,
+    endPrompt: {
+      header: "Welcome2",
+      prompt: `Based on your existing knowledge, can you tell me the problems with the above pull request and your suggestions for this PR?`
+    }
   };
 }
 
@@ -15816,14 +15829,16 @@ async function runPRReview({ api, repo, owner, number, split }) {
     const conversation = startConversation(api, 5);
     let cnt = 0;
     let lastResponse = undefined;
+
     const prompts = welcomePrompts.concat(diffPrompts);
     prompts.push(endPrompt);
+
     for (const prompt of prompts) {
-      core.info(`Sending ${prompt}`);
-      const response = await conversation.sendMessage(prompt, lastResponse);
+      core.info(`Sending ${prompt.header}: ${prompt.prompt}`);
+      const response = await conversation.sendMessage(prompt.prompt, lastResponse);
       lastResponse = response;
       core.info(`Received ${response.text}`);
-      reply += `**ChatGPT#${++cnt}**: ${response.text}\n\n`;
+      reply += `**ChatGPT#${++cnt} - ${prompt.header}**: ${response.text}\n\n`;
       // Wait for 10s
       await new Promise((r) => setTimeout(r, 10000));
     }
