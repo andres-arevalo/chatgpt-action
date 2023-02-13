@@ -39,14 +39,16 @@ async function runPRReview({ api, repo, owner, number, split }) {
     const conversation = startConversation(api, 5);
     let cnt = 0;
     let lastResponse = undefined;
+
     const prompts = welcomePrompts.concat(diffPrompts);
     prompts.push(endPrompt);
+
     for (const prompt of prompts) {
-      core.info(`Sending ${prompt}`);
-      const response = await conversation.sendMessage(prompt, lastResponse);
+      core.info(`Sending ${prompt.header}: ${prompt.prompt}`);
+      const response = await conversation.sendMessage(prompt.prompt, lastResponse);
       lastResponse = response;
       core.info(`Received ${response.text}`);
-      reply += `**ChatGPT#${++cnt}**: ${response.text}\n\n`;
+      reply += `**ChatGPT#${++cnt} - ${prompt.header}**: ${response.text}\n\n`;
       // Wait for 10s
       await new Promise((r) => setTimeout(r, 10000));
     }
