@@ -15744,14 +15744,13 @@ function genReviewPRSplitedPrompt(title, body, diff, limit) {
     .reduce((prev, cur, i) => {
       if (i % 2 == 1) {
         let dif = prev + cur;
-        const header = diff.split("\n", 1)[0];
         if (dif.length > limit) {
           splits.push({
-            header: header,
+            header: dif.split("\n", 1)[0].split(" ")[2],
             prompt: "This diff is too large so I omitted it for you."
           });
         } else splits.push({
-          header: header,
+          header: dif.split("\n", 1)[0].split(" ")[2],
           prompt: dif
         });
       }
@@ -15774,7 +15773,7 @@ function genReviewPRSplitedPrompt(title, body, diff, limit) {
     ],
     diffPrompts: splits,
     endPrompt: {
-      header: "Welcome2",
+      header: "End",
       prompt: `Based on your existing knowledge, can you tell me the problems with the above pull request and your suggestions for this PR?`
     }
   };
